@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <linux/ptrace.h>
 #include <linux/elf.h>
+#include "module.h"
 
 uint64_t get_pc(pid_t pid) {
     struct iovec io;
