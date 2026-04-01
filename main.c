@@ -1,16 +1,24 @@
-#include <stdio.h>
 #include <sys/ptrace.h>
+#include <sys/uio.h>
+#include <sys/user.h>
 #include <sys/wait.h>
 #include <unistd.h>
-#include "module.h"
-#include <sys/user.h>
 #include <stdint.h>
+#include <stdio.h>
+#include <linux/ptrace.h>
 
 uint64_t get_pc(pid_t pid) {
-    struct user_regs_struct regs;
-    ptrace(PTRACE_GETREGS, pid, NULL, &regs);
-    return regs.rip;
+    struct iovec io;
+    struct user_pt_regs regs;
+
+    io.iov_base = &regs;
+    io.iov_len = sizeof(regs);
+
+    ptrace(PTRACE_GETREGSET, pid, (void*)NT_PRSTATUS, &io);
+
+    return regs.pc;
 }
+
 
 extern detector_module_t cfi_module;
 
