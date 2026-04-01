@@ -9,6 +9,7 @@
 
 #include "module.h"
 
+extern detector_module_t cfi_module;
 
 uint64_t get_pc(pid_t pid) {
     struct iovec io;
@@ -22,12 +23,12 @@ uint64_t get_pc(pid_t pid) {
     return regs.pc;
 }
 
-
-extern detector_module_t cfi_module;
-
-uint64_t get_pc(pid_t pid); // platform-specific
-
 int main(int argc, char *argv[]) {
+    if (argc < 2) {
+        printf("Usage: %s <binary>\n", argv[0]);
+        return 1;
+    }
+
     pid_t pid = fork();
 
     if (pid == 0) {
@@ -41,11 +42,20 @@ int main(int argc, char *argv[]) {
 
     uint64_t prev_pc = 0;
 
+    int warmup = 0;
+
     while (1) {
         ptrace(PTRACE_SINGLESTEP, pid, NULL, NULL);
         wait(NULL);
 
         uint64_t pc = get_pc(pid);
+
+        // global warmup (VERY IMPORTANT)
+        if (warmup < 30) {
+            warmup++;
+            prev_pc = pc;
+            continue;
+        }
 
         run_modules(prev_pc, pc);
 
