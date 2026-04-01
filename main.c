@@ -11,6 +11,13 @@
 
 extern detector_module_t cfi_module;
 
+/*
+ * ARM64 register capture
+ */
+struct regs_pack {
+    struct user_pt_regs regs;
+};
+
 uint64_t get_pc(pid_t pid) {
     struct iovec io;
     struct user_pt_regs regs;
@@ -23,7 +30,23 @@ uint64_t get_pc(pid_t pid) {
     return regs.pc;
 }
 
+/*
+ * NEW: get stack pointer (IMPORTANT for real CFI later)
+ */
+uint64_t get_sp(pid_t pid) {
+    struct iovec io;
+    struct user_pt_regs regs;
+
+    io.iov_base = &regs;
+    io.iov_len = sizeof(regs);
+
+    ptrace(PTRACE_GETREGSET, pid, (void*)NT_PRSTATUS, &io);
+
+    return regs.sp;
+}
+
 int main(int argc, char *argv[]) {
+
     if (argc < 2) {
         printf("Usage: %s <binary>\n", argv[0]);
         return 1;
@@ -41,7 +64,6 @@ int main(int argc, char *argv[]) {
     register_module(cfi_module);
 
     uint64_t prev_pc = 0;
-
     int warmup = 0;
 
     while (1) {
@@ -50,8 +72,10 @@ int main(int argc, char *argv[]) {
 
         uint64_t pc = get_pc(pid);
 
-        // global warmup (VERY IMPORTANT)
-        if (warmup < 30) {
+        /*
+         * WARMUP → avoids startup noise (VERY IMPORTANT)
+         */
+        if (warmup < 50) {
             warmup++;
             prev_pc = pc;
             continue;
