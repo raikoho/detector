@@ -1,47 +1,39 @@
 #include <stdio.h>
 #include <stdint.h>
-#include <sys/types.h>
 #include <sys/ptrace.h>
+#include <sys/types.h>
 #include "../module.h"
 
-static pid_t g_pid = 0;
-static uint64_t expected_ret = 0;
+static uint64_t baseline_ret = 0;
 static int initialized = 0;
 
 /*
- * ARM64:
- * saved return address (LR) is stored at:
- * [SP]
+ * read stack memory
  */
-static uint64_t read_mem(uint64_t addr) {
-    return ptrace(PTRACE_PEEKDATA, g_pid, (void*)addr, NULL);
+static uint64_t read_mem(pid_t pid, uint64_t addr) {
+    return ptrace(PTRACE_PEEKDATA, pid, (void*)addr, NULL);
 }
 
 /*
- * We detect:
- * stack return address != expected return address
+ * REAL DETECTION:
+ * compare saved return address on stack
  */
-int cfi_check(uint64_t pid, uint64_t prev_pc, uint64_t curr_pc, uint64_t sp) {
+int cfi_check(pid_t pid, uint64_t pc, uint64_t sp) {
 
-    g_pid = (pid_t)pid;
+    uint64_t saved_ret = read_mem(pid, sp);
 
     if (!initialized) {
-        /*
-         * First time we see execution:
-         * capture correct return address baseline
-         */
-        expected_ret = read_mem(sp);
+        baseline_ret = saved_ret;
         initialized = 1;
         return 0;
     }
 
-    uint64_t current_ret = read_mem(sp);
-
-    if (current_ret != expected_ret) {
-        printf("\n[!!! DETECTION !!!]\n");
-        printf("Return address overwritten!\n");
-        printf("Expected: 0x%lx\n", expected_ret);
-        printf("Got     : 0x%lx\n", current_ret);
+    if (saved_ret != baseline_ret) {
+        printf("\n[!!! CFI VIOLATION !!!]\n");
+        printf("Return address corrupted!\n");
+        printf("expected: 0x%lx\n", baseline_ret);
+        printf("actual  : 0x%lx\n", saved_ret);
+        printf("PC      : 0x%lx\n", pc);
         return 1;
     }
 
@@ -52,8 +44,8 @@ int cfi_check(uint64_t pid, uint64_t prev_pc, uint64_t curr_pc, uint64_t sp) {
  * module export
  */
 detector_module_t cfi_module = {
-    .name = "ShadowStack-CFI",
+    .name = "ShadowReturnCFI",
     .init = NULL,
-    .check = NULL,   // replaced in core (see below)
+    .check = cfi_check,
     .cleanup = NULL
 };
