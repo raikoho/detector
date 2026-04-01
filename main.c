@@ -5,6 +5,7 @@
 #include <sys/wait.h>
 #include <sys/uio.h>
 #include <linux/ptrace.h>
+#include <elf.h>
 
 #include "module.h"
 
