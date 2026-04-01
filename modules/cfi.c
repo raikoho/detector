@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdint.h>
-#include "module.h"
+#include "../module.h"
 
 // VERY SIMPLE RULE (demo version)
 int cfi_check(uint64_t prev_pc, uint64_t curr_pc) {
