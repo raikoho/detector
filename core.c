@@ -9,6 +9,7 @@ static int module_count = 0;
 void register_module(detector_module_t mod) {
     if (module_count < MAX_MODULES) {
         modules[module_count++] = mod;
+        if (mod.init) mod.init();
     }
 }
 
