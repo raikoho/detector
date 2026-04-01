@@ -1,13 +1,14 @@
-#include <sys/ptrace.h>
-#include <sys/uio.h>
-#include <sys/user.h>
-#include <sys/wait.h>
-#include <unistd.h>
-#include <stdint.h>
 #include <stdio.h>
+#include <stdint.h>
+#include <unistd.h>
+#include <sys/ptrace.h>
+#include <sys/wait.h>
+#include <sys/uio.h>
 #include <linux/ptrace.h>
-#include <linux/elf.h>
+#include <elf.h>
+
 #include "module.h"
+
 
 uint64_t get_pc(pid_t pid) {
     struct iovec io;
