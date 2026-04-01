@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <sys/ptrace.h>
 #include "../module.h"
+#include <sys/types.h>
 
 // ---- state ----
 static int initialized = 0;
