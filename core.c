@@ -1,15 +1,13 @@
-#include <stdio.h>
-#include <stdint.h>
 #include "module.h"
 
-static detector_module_t module;
+static detector_module_t mod;
 
 void register_module(detector_module_t m) {
-    module = m;
+    mod = m;
 }
 
-void run_modules(uint64_t pid, uint64_t prev_pc, uint64_t curr_pc, uint64_t sp) {
-    if (module.check) {
-        module.check(pid, prev_pc, curr_pc, sp);
+void run_modules(pid_t pid, uint64_t pc, uint64_t sp) {
+    if (mod.check) {
+        mod.check(pid, pc, sp);
     }
 }
